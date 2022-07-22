@@ -13,7 +13,7 @@ TODO:
 - [ ] Choose Audio output
 - [ ] Display size
 - [ ] Render size
-- [ ] Ensure this remains superior to [Glitcher's work](https://github.com/GlitcherOG/Camera-Display)
+- [x] Ensure this remains superior to [Glitcher's work](https://github.com/GlitcherOG/Camera-Display)
 
 Future goals:
 - [ ] Fullscreen
