@@ -18,3 +18,4 @@ TODO:
 Future goals:
 - [ ] Fullscreen
 - [ ] Filters
+- [ ] Single .exe
