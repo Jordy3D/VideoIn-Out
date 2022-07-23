@@ -11,7 +11,7 @@ TODO:
 - [ ] Choose Video input
 - [ ] Choose Audio input
 - [ ] Choose Audio output
-- [ ] Display size
+- [ ] Display size - IN PROGRESS
 - [ ] Render size
 - [x] Ensure this remains superior to [Glitcher's work](https://github.com/GlitcherOG/Camera-Display)
 
