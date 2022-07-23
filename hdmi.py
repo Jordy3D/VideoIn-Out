@@ -2,15 +2,58 @@ import sys
 import time
 import threading
 import multiprocessing
+from multiprocessing import Manager, freeze_support
+
+import keyboard
 
 import cv2
 from pygrabber.dshow_graph import FilterGraph
 
 import argparse
-
 import sounddevice as sd
-import numpy  # Make sure NumPy is loaded before it is used in the callback
-assert numpy  # avoid "imported but unused" message (W0611)
+
+
+class Cam():
+    def __init__(self, cam=None, device=""):
+        self.cam = cam
+        self.device = device
+
+    def set_device(self, device):
+        # There is indeed two of the same line. I do not know why it is needed, but it is.
+        cap = cv2.VideoCapture(device)
+        cap = cv2.VideoCapture(device)
+
+        self.device = device
+
+        # vid = cv2.VideoCapture(device + cv2.CAP_DSHOW)
+
+        cap.set(cv2.CAP_PROP_SATURATION, 150)  # Lowers the saturation coming in, which is truly too high by default
+        self.cam = cap
+
+    def set_res(self, res_x=1280, res_y=720):
+        self.cam.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))  # depends on fourcc available camera
+        self.cam.set(cv2.CAP_PROP_FRAME_WIDTH, res_x)
+        self.cam.set(cv2.CAP_PROP_FRAME_HEIGHT, res_y)
+        # vid.set(cv2.CAP_PROP_FPS, 60)
+
+    def set_fps(self, fps):
+        print("NOT YET IMPLEMENTED")
+        # vid.set(cv2.CAP_PROP_FPS, 60)
+
+
+def is_focused():
+    import win32gui
+    import win32process
+    import os
+
+    focus_window_pid = win32process.GetWindowThreadProcessId(win32gui.GetForegroundWindow())[1]
+    current_process_pid = os.getppid()
+
+    focused = focus_window_pid == current_process_pid
+
+    print(f"\rFocused PID: {focus_window_pid} | Current PID: {current_process_pid}", end="")
+
+    return focused
 
 
 def clear_cam(camera):
@@ -27,22 +70,19 @@ def grab_devices():
     except ValueError as e:
         print(e)
 
-    vid = cv2.VideoCapture(device)
-    vid = cv2.VideoCapture(device)
-    # vid = cv2.VideoCapture(device + cv2.CAP_DSHOW)
+    vid = Cam()
+    vid.set_device(device)
+    vid.set_res()
 
-    vid.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))  # depends on fourcc available camera
-    # vid.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-    # vid.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-    vid.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
-    vid.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
-    # vid.set(cv2.CAP_PROP_FPS, 60)
-    vid.set(cv2.CAP_PROP_SATURATION, 150)
+
+    vid.cam.set(cv2.CAP_PROP_SATURATION, 150)
     return vid
+
 
 
 def audio():
     print("Starting audio...")
+
     # print(sd.query_devices())
 
     def int_or_str(text):
@@ -104,7 +144,7 @@ def video(audio):
     print("Starting video...")
 
     camera = grab_devices()
-    camera_loaded = camera.isOpened()
+    camera_loaded = camera.cam.isOpened()
 
     if not camera_loaded:
         print("Error opening video stream or file")
@@ -113,7 +153,7 @@ def video(audio):
     print("Video playing!")
     # While we definitely totally 100% have a camera feed
     while camera_loaded:
-        ret, frame = camera.read()
+        ret, frame = camera.cam.read()
 
         # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         # # contrast = 1
@@ -128,18 +168,32 @@ def video(audio):
         # cv2.resizeWindow(f"Bane's HDMI + Audio Display", 1920, 1080)
         cv2.imshow(f"Bane's HDMI + Audio Display", frame)
 
+        if keyboard.is_pressed('1'):
+            # clear_cam(camera.cam)
+            print("Changing resolution of camera...")
+            camera.set_device(camera.device)
+            camera.set_res(1280, 720)
+
+        if keyboard.is_pressed('2'):
+            # clear_cam(camera.cam)
+            print("Changing resolution of camera...")
+            camera.set_device(camera.device)
+            camera.set_res(1920, 1080)
+
         # If Esc is pressed, break the loop
         if cv2.waitKey(1) & 0xFF == 27:
             audio.terminate()
             break
 
+    return camera.cam.read()
     # Clear and release the camera
-    clear_cam(camera)
+    clear_cam(camera.cam)
 
 
 if __name__ == '__main__':
+    freeze_support()
     x = multiprocessing.Process(target=audio)
     x.start()
 
-    time.sleep(1)
+    time.sleep(5)
     video(x)
